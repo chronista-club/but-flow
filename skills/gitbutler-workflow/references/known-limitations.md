@@ -113,6 +113,35 @@ XS:8-10個, S:4-5個, M:2-3個, L:1個, XL:0.3-0.5個 を記載。
 - CLAUDE.md と rules で「gitを使うな」と明示的に指示
 - hookは最後の防衛線であり、唯一の手段ではない
 
+### but resolve finish の "No default target branch" エラー
+
+**現象**: `but pull` でコンフリクト発生 → `but resolve <id>` で解決モードに入る →
+手動でコンフリクト解決 → `but resolve finish` で "No default target branch set" エラー。
+
+**原因**: `gitbutler/edit` ブランチ上ではGitButlerの設定ファイルにアクセスできない場合がある。
+
+**ワークアラウンド**:
+- `but setup` でターゲットブランチを再設定してから `but resolve finish`
+- それでもダメな場合は `but undo` で pull 前の状態に戻し、rebase せずに push（GitHub が merge 処理）
+
+### but stage のID変動
+
+**現象**: `but stage <cliId> <branch>` を実行すると、残りのファイルの cliId が変わる。
+事前に取得したIDリストで連続 staging すると、2回目以降のIDが不一致でエラーになる。
+
+**原因**: cliId は表示順に基づく動的な値で、ファイル数が変わると再割り当てされる。
+
+**ワークアラウンド**: 毎回 `but status --json` を再取得して最新のIDを使う。
+`/but-flow:stage-bulk` コマンドはこの問題に対応済み。
+
+### but commit のデフォルト動作
+
+**現象**: `but commit -m "msg"` がステージング状態に関係なく、全ての未割当変更を含めてコミットする。
+
+**対策**:
+- `but commit --only -m "msg"` でstaged済みファイルのみコミット
+- `but commit --changes <id1,id2> -m "msg"` で特定ファイルのみコミット
+
 ---
 
 ## 📋 検証TODO
