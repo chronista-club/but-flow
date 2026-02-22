@@ -1,5 +1,5 @@
 {
-  "description": "CW Flow hooks: ワーカー環境検出、セッション開始時のコンテキスト注入",
+  "description": "CW Flow hooks: ワーカー環境検出、セッション開始時のコンテキスト注入、AskUserQuestionブロック",
   "hooks": {
     "SessionStart": [
       {
@@ -8,6 +8,20 @@
             "type": "command",
             "command": "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/session-start.sh",
             "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": {
+          "toolName": "AskUserQuestion"
+        },
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/block-ask-in-worker.sh",
+            "timeout": 5
           }
         ]
       }

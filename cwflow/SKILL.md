@@ -135,19 +135,31 @@ cd $(cw path issue-43) && claude
 cd $(cw path hotfix-1) && claude
 ```
 
-### パターン2: Leader-Worker（Claude Code Teams）
+### パターン2: Leader-Worker（cwflow + ccwire 統合）
 
-リーダーAgentがワーカーを作成し、Taskツールでサブエージェントを並列起動。
+リーダーがワーカーを作成し、tmux ペインで並列起動。ccwire で相互通信。
 
 ```
-Leader (メインリポ)
-├── cw new worker-a feature/issue-42
-├── cw new worker-b feature/issue-43
-├── TeamCreate → TaskCreate × 2
-├── Task(CWD=worker-a) → Agent A 起動
-├── Task(CWD=worker-b) → Agent B 起動
-└── TaskList で進捗監視 → PR作成
+Leader (メインリポ, ccwire: "lead")
+├── worker-planner で Wave 計画を策定
+├── TaskCreate で依存関係付きタスクを作成
+├── cw new issue-42 feature/issue-42
+├── cw new issue-43 feature/issue-43
+├── /cwflow:parallel issue-42 issue-43
+│   ├── tmux pane 0: CCWIRE_SESSION_NAME=worker-issue-42 claude
+│   └── tmux pane 1: CCWIRE_SESSION_NAME=worker-issue-43 claude
+├── wire_status で進捗監視
+├── wire_receive でワーカーからの質問に回答
+└── TaskList で完了確認 → 次 Wave 起動
 ```
+
+**通信フロー**:
+- ワーカー → リーダー: `wire_send(to: "lead", content: "質問", type: "task_request")`
+- リーダー → ワーカー: `wire_send(to: "worker-issue-42", content: "回答")`
+- 全体通知: `wire_broadcast(content: "main への push を停止してください")`
+- ステータス: `wire_status(status: "busy")` → ダッシュボードに反映
+
+**AskUserQuestion は使わない**: ワーカー環境では PreToolUse フックでブロック済み。
 
 ### パターン3: Issue消化マラソン
 
